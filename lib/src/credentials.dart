@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:cancellation_token_http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'handle_access_token_response.dart';

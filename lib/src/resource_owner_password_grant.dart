@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:http/http.dart' as http;
+import 'package:cancellation_token_http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'client.dart';
@@ -45,24 +45,23 @@ import 'utils.dart';
 ///
 /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
 Future<Client> resourceOwnerPasswordGrant(
-    Uri authorizationEndpoint, String username, String password,
-    {String? identifier,
-    String? secret,
-    Iterable<String>? scopes,
-    bool basicAuth = true,
-    CredentialsRefreshedCallback? onCredentialsRefreshed,
-    http.Client? httpClient,
-    String? delimiter,
-    Map<String, dynamic> Function(MediaType? contentType, String body)?
-        getParameters}) async {
+  Uri authorizationEndpoint,
+  String username,
+  String password, {
+  String? identifier,
+  String? secret,
+  Iterable<String>? scopes,
+  bool basicAuth = true,
+  CredentialsRefreshedCallback? onCredentialsRefreshed,
+  http.Client? httpClient,
+  String? delimiter,
+  Map<String, dynamic> Function(MediaType? contentType, String body)? getParameters,
+  http.CancellationToken? cancellationToken,
+}) async {
   delimiter ??= ' ';
   var startTime = DateTime.now();
 
-  var body = {
-    'grant_type': 'password',
-    'username': username,
-    'password': password
-  };
+  var body = {'grant_type': 'password', 'username': username, 'password': password};
 
   var headers = <String, String>{};
 
@@ -80,15 +79,21 @@ Future<Client> resourceOwnerPasswordGrant(
   }
 
   httpClient ??= http.Client();
-  var response = await httpClient.post(authorizationEndpoint,
-      headers: headers, body: body);
+  var response = await httpClient.post(
+    authorizationEndpoint,
+    headers: headers,
+    body: body,
+    cancellationToken: cancellationToken,
+  );
 
   var credentials = handleAccessTokenResponse(
-      response, authorizationEndpoint, startTime, scopes?.toList(), delimiter,
-      getParameters: getParameters);
+    response,
+    authorizationEndpoint,
+    startTime,
+    scopes?.toList(),
+    delimiter,
+    getParameters: getParameters,
+  );
   return Client(credentials,
-      identifier: identifier,
-      secret: secret,
-      httpClient: httpClient,
-      onCredentialsRefreshed: onCredentialsRefreshed);
+      identifier: identifier, secret: secret, httpClient: httpClient, onCredentialsRefreshed: onCredentialsRefreshed);
 }

@@ -6,8 +6,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:cancellation_token_http/http.dart' as http;
 import 'package:crypto/crypto.dart';
-import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'authorization_exception.dart';
@@ -104,8 +104,7 @@ class AuthorizationCodeGrant {
   _State _state = _State.initial;
 
   /// Allowed characters for generating the _codeVerifier
-  static const String _charset =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  static const String _charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
 
   /// The PKCE code verifier. Will be generated if one is not provided in the
   /// constructor.
@@ -146,15 +145,13 @@ class AuthorizationCodeGrant {
   /// format as the [standard JSON response][].
   ///
   /// [standard JSON response]: https://tools.ietf.org/html/rfc6749#section-5.1
-  AuthorizationCodeGrant(
-      this.identifier, this.authorizationEndpoint, this.tokenEndpoint,
+  AuthorizationCodeGrant(this.identifier, this.authorizationEndpoint, this.tokenEndpoint,
       {this.secret,
       String? delimiter,
       bool basicAuth = true,
       http.Client? httpClient,
       CredentialsRefreshedCallback? onCredentialsRefreshed,
-      Map<String, dynamic> Function(MediaType? contentType, String body)?
-          getParameters,
+      Map<String, dynamic> Function(MediaType? contentType, String body)? getParameters,
       String? codeVerifier})
       : _basicAuth = basicAuth,
         _httpClient = httpClient ?? http.Client(),
@@ -182,17 +179,14 @@ class AuthorizationCodeGrant {
   /// query parameters provided to the redirect URL.
   ///
   /// It is a [StateError] to call this more than once.
-  Uri getAuthorizationUrl(Uri redirect,
-      {Iterable<String>? scopes, String? state}) {
+  Uri getAuthorizationUrl(Uri redirect, {Iterable<String>? scopes, String? state}) {
     if (_state != _State.initial) {
       throw StateError('The authorization URL has already been generated.');
     }
     _state = _State.awaitingResponse;
 
     var scopeList = scopes?.toList() ?? <String>[];
-    var codeChallenge = base64Url
-        .encode(sha256.convert(ascii.encode(_codeVerifier)).bytes)
-        .replaceAll('=', '');
+    var codeChallenge = base64Url.encode(sha256.convert(ascii.encode(_codeVerifier)).bytes).replaceAll('=', '');
 
     _redirectEndpoint = redirect;
     _scopes = scopeList;
@@ -230,7 +224,9 @@ class AuthorizationCodeGrant {
   ///
   /// Throws [AuthorizationException] if the authorization fails.
   Future<Client> handleAuthorizationResponse(
-      Map<String, String> parameters) async {
+    Map<String, String> parameters, {
+    http.CancellationToken? cancellationToken,
+  }) async {
     if (_state == _State.initial) {
       throw StateError('The authorization URL has not yet been generated.');
     } else if (_state == _State.finished) {
@@ -261,7 +257,7 @@ class AuthorizationCodeGrant {
           '"code".');
     }
 
-    return _handleAuthorizationCode(parameters['code']);
+    return _handleAuthorizationCode(parameters['code'], cancellationToken: cancellationToken);
   }
 
   /// Processes an authorization code directly.
@@ -279,7 +275,10 @@ class AuthorizationCodeGrant {
   /// responses while retrieving credentials.
   ///
   /// Throws [AuthorizationException] if the authorization fails.
-  Future<Client> handleAuthorizationCode(String authorizationCode) async {
+  Future<Client> handleAuthorizationCode(
+    String authorizationCode, {
+    http.CancellationToken? cancellationToken,
+  }) async {
     if (_state == _State.initial) {
       throw StateError('The authorization URL has not yet been generated.');
     } else if (_state == _State.finished) {
@@ -287,12 +286,15 @@ class AuthorizationCodeGrant {
     }
     _state = _State.finished;
 
-    return _handleAuthorizationCode(authorizationCode);
+    return _handleAuthorizationCode(authorizationCode, cancellationToken: cancellationToken);
   }
 
   /// This works just like [handleAuthorizationCode], except it doesn't validate
   /// the state beforehand.
-  Future<Client> _handleAuthorizationCode(String? authorizationCode) async {
+  Future<Client> _handleAuthorizationCode(
+    String? authorizationCode, {
+    http.CancellationToken? cancellationToken,
+  }) async {
     var startTime = DateTime.now();
 
     var headers = <String, String>{};
@@ -314,12 +316,9 @@ class AuthorizationCodeGrant {
       if (secret != null) body['client_secret'] = secret;
     }
 
-    var response =
-        await _httpClient!.post(tokenEndpoint, headers: headers, body: body);
+    var response = await _httpClient!.post(tokenEndpoint, headers: headers, body: body, cancellationToken: cancellationToken);
 
-    var credentials = handleAccessTokenResponse(
-        response, tokenEndpoint, startTime, _scopes, _delimiter,
-        getParameters: _getParameters);
+    var credentials = handleAccessTokenResponse(response, tokenEndpoint, startTime, _scopes, _delimiter, getParameters: _getParameters);
     return Client(credentials,
         identifier: identifier,
         secret: secret,

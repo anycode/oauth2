@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:http/http.dart' as http;
+import 'package:cancellation_token_http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'client.dart';
@@ -40,13 +40,16 @@ import 'utils.dart';
 /// its body as a UTF-8-decoded string. It should return a map in the same
 /// format as the [standard JSON response](https://tools.ietf.org/html/rfc6749#section-5.1)
 Future<Client> clientCredentialsGrant(
-    Uri authorizationEndpoint, String? identifier, String? secret,
-    {Iterable<String>? scopes,
-    bool basicAuth = true,
-    http.Client? httpClient,
-    String? delimiter,
-    Map<String, dynamic> Function(MediaType? contentType, String body)?
-        getParameters}) async {
+  Uri authorizationEndpoint,
+  String? identifier,
+  String? secret, {
+  Iterable<String>? scopes,
+  bool basicAuth = true,
+  http.Client? httpClient,
+  String? delimiter,
+  Map<String, dynamic> Function(MediaType? contentType, String body)? getParameters,
+  http.CancellationToken? cancellationToken,
+}) async {
   delimiter ??= ' ';
   var startTime = DateTime.now();
 
@@ -68,12 +71,20 @@ Future<Client> clientCredentialsGrant(
   }
 
   httpClient ??= http.Client();
-  var response = await httpClient.post(authorizationEndpoint,
-      headers: headers, body: body);
+  var response = await httpClient.post(
+    authorizationEndpoint,
+    headers: headers,
+    body: body,
+    cancellationToken: cancellationToken,
+  );
 
-  var credentials = handleAccessTokenResponse(response, authorizationEndpoint,
-      startTime, scopes?.toList() ?? [], delimiter,
-      getParameters: getParameters);
-  return Client(credentials,
-      identifier: identifier, secret: secret, httpClient: httpClient);
+  var credentials = handleAccessTokenResponse(
+    response,
+    authorizationEndpoint,
+    startTime,
+    scopes?.toList() ?? [],
+    delimiter,
+    getParameters: getParameters,
+  );
+  return Client(credentials, identifier: identifier, secret: secret, httpClient: httpClient);
 }

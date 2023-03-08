@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:http/http.dart' as http;
+import 'package:cancellation_token_http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'authorization_exception.dart';
@@ -104,14 +104,16 @@ class Client extends http.BaseClient {
   /// This will also automatically refresh this client's [Credentials] before
   /// sending the request if necessary.
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+  Future<http.StreamedResponse> send(http.BaseRequest request, {
+  http.CancellationToken? cancellationToken,
+  }) async {
     if (credentials.isExpired) {
       if (!credentials.canRefresh) throw ExpirationException(credentials);
       await refreshCredentials();
     }
 
     request.headers['authorization'] = 'Bearer ${credentials.accessToken}';
-    var response = await _httpClient!.send(request);
+    var response = await _httpClient!.send(request, cancellationToken: cancellationToken);
 
     if (response.statusCode != 401) return response;
     if (!response.headers.containsKey('www-authenticate')) return response;
