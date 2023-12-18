@@ -20,10 +20,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sdk: [2.17.0, dev]
+        sdk: [3.0.0, dev]
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: dart-lang/setup-dart@a57a6c04cf7d4840e88432aad6281d1e125f0d46
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
         with:
           sdk: ${{ matrix.sdk }}
       - id: install
@@ -50,10 +50,10 @@ jobs:
       matrix:
         # Add macos-latest and/or windows-latest if relevant for this package.
         os: [ubuntu-latest]
-        sdk: [2.17.0, dev]
+        sdk: [stable, beta]
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: dart-lang/setup-dart@a57a6c04cf7d4840e88432aad6281d1e125f0d46
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
         with:
           sdk: ${{ matrix.sdk }}
       - id: install
