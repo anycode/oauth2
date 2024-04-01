@@ -6,8 +6,9 @@ description: >-
   OAuth2 credentials.
   Uses Cancelable Token HTTP Client library which allows canceling requests.
   (fully compatible with HTTP Client library)
-repository: https://github.com/dart-lang/oauth2
-  
+repository: https://github.com/anycode/oauth2
+publish_to: https://pub.anycode.dev
+
 environment:
   sdk: ^3.0.0
 
