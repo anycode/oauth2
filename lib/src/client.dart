@@ -4,8 +4,8 @@
 
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:cancellation_token_http/http.dart' as http;
+import 'package:collection/collection.dart';
 import 'package:http_parser/http_parser.dart';
 
 import 'authorization_exception.dart';
